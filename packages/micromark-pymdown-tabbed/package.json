@@ -1,0 +1,31 @@
+{
+  "name": "micromark-pymdown-tabbed",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "micromark-build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.19.5",
+    "micromark": "^4.0.0",
+    "micromark-build": "^2.0.2",
+    "micromark-util-types": "^2.0.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "devlop": "^1.1.0",
+    "micromark-core-commonmark": "^2.0.0",
+    "micromark-factory-space": "^2.0.0",
+    "micromark-util-character": "^2.0.1",
+    "micromark-util-symbol": "^2.0.0"
+  },
+  "exports": {
+    "default": "./dist/index.js",
+    "development": "./dev/index.js"
+  }
+}

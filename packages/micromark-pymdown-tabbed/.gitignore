@@ -1,0 +1,5 @@
+dist/
+dev/**/*.d.ts
+/lib/
+/index.d.ts
+/index.js
