@@ -41,16 +41,16 @@ function tabbedTokenizeStart(effects, ok, nok) {
 
   /**
    * ```markdown
-   * ===! "C++"
-   * ^^^ => count
+   * > | ===! "C++"
+   *     ^^^ => count
    * ```
    */
   let matchedEqCount = 0;
 
   /**
    * ```markdown
-   * ===! "C++"
-   *    ^
+   * > | ===! "C++"
+   *        ^
    * ```
    *
    * Can be "", "+", "!", "+!" or "!+".
@@ -65,7 +65,7 @@ function tabbedTokenizeStart(effects, ok, nok) {
    * ```markdown
    * > | === "C++"
    *     ^
-   *   | More Content
+   * > | More Content
    * ```
    *
    * @type {State}
@@ -82,7 +82,7 @@ function tabbedTokenizeStart(effects, ok, nok) {
    * ```markdown
    * > | === "C++"
    *     ^^^
-   *   | More Content
+   * > | More Content
    * ```
    *
    * @type {State}
@@ -177,10 +177,8 @@ function tabbedTokenizeStart(effects, ok, nok) {
    * ```markdown
    * > | === "C++"
    *         ^
-   *   | More Content
+   * > | More Content
    * ```
-   *
-   * Try to match something in "" greedy (to EOL).
    *
    * @type {State}
    */
@@ -212,15 +210,15 @@ function tabbedTokenizeStart(effects, ok, nok) {
    * Current:
    *
    * ```markdown
-   * === "C++"another"
-   *      ^^^^ // nok
+   * > | === "C++"another"
+   *          ^^^^ // nok
    * ```
    *
    * Pymdown:
    *
    * ```markdown
-   * === "C++"another"
-   *      ^^^^^^^^^^^
+   * > | === "C++"another"
+   *          ^^^^^^^^^^^
    * ```
    */
   function tabTitleInside(code) {
@@ -251,6 +249,7 @@ function tabbedTokenizeStart(effects, ok, nok) {
     }
 
     if (!markdownLineEnding(code)) {
+      // only trailing spaces is allowed.
       if (!markdownSpace(code)) {
         return nok(code);
       }
@@ -261,8 +260,7 @@ function tabbedTokenizeStart(effects, ok, nok) {
     /**
      * ```markdown
      * > | === "C++"[EOL]
-     *   |     Content
-     *     ^
+     *              ^ // ok
      * ```
      */
 
@@ -286,14 +284,21 @@ function tabbedTokenizeContinuation(effects, ok, nok) {
 
   /** @type {State} */
   function onBlank(code) {
+    /**
+     * onBlank:
+     *
+     * ```markdown
+     * > | === "C++"[EOL]
+     * > | [EOL]
+     *     ^^^^^
+     * > |     Content
+     * ```
+     *
+     * And check next line.
+     */
     assert(self.containerState, "expected state");
     assert(typeof self.containerState.size === "number", "expected size");
 
-    self.containerState.furtherBlankLines =
-      self.containerState.furtherBlankLines;
-
-    // We have a blank line.
-    // Still, try to consume at most the items size.
     return factorySpace(
       effects,
       ok,
@@ -305,12 +310,27 @@ function tabbedTokenizeContinuation(effects, ok, nok) {
   /** @type {State} */
   function notBlank(code) {
     assert(self.containerState, "expected state");
-    if (self.containerState.furtherBlankLines || !markdownSpace(code)) {
-      self.containerState.furtherBlankLines = undefined;
+    if (!markdownSpace(code)) {
+      /**
+       * ```markdown
+       * > | === "C++"[EOL]
+       * > |     ...Content in Tabbed[EOL]
+       * > | Content
+       *     ^ not space
+       * ```
+       */
       return notInCurrentItem(code);
     }
 
-    self.containerState.furtherBlankLines = undefined;
+    /**
+     * ```markdown
+     * > | === "C++"[EOL]
+     * > |     ...Content in Tabbed[EOL]
+     *     ^ Is space
+     * ```
+     *
+     * check indent.
+     */
     return effects.attempt(indentConstruct, ok, notInCurrentItem)(code);
   }
 
@@ -326,9 +346,12 @@ function tabbedTokenizeContinuation(effects, ok, nok) {
       self.parser.constructs.disable.null,
       "expected `disable.null` to be populated"
     );
+
     return factorySpace(
       effects,
+      // check next tab
       effects.attempt(tabbedConstruct, ok, nok),
+      // and also, indent size (get from <linePrefix>)
       types.linePrefix,
       self.parser.constructs.disable.null.includes("codeIndented")
         ? undefined

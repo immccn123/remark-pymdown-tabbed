@@ -5,13 +5,12 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "micromark-build"
+    "build": "tsc && micromark-build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "esbuild": "^0.19.5",
     "micromark": "^4.0.0",
     "micromark-build": "^2.0.2",
     "micromark-util-types": "^2.0.0",
