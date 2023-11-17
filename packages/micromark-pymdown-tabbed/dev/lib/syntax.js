@@ -42,7 +42,7 @@ function tabbedTokenizeStart(effects, ok, nok) {
   /**
    * ```markdown
    * > | ===! "C++"
-   *     ^^^ => count
+   *     ^^^ <- count
    * ```
    */
   let matchedEqCount = 0;
@@ -53,7 +53,7 @@ function tabbedTokenizeStart(effects, ok, nok) {
    *        ^
    * ```
    *
-   * Can be "", "+", "!", "+!" or "!+".
+   * Could be "", "+", "!", "+!" or "!+".
    */
   let extraFlags = "";
 
@@ -82,7 +82,7 @@ function tabbedTokenizeStart(effects, ok, nok) {
    * ```markdown
    * > | === "C++"
    *     ^^^
-   * > | More Content
+   * > |     More Content
    * ```
    *
    * @type {State}
@@ -177,7 +177,7 @@ function tabbedTokenizeStart(effects, ok, nok) {
    * ```markdown
    * > | === "C++"
    *         ^
-   * > | More Content
+   * > |     More Content
    * ```
    *
    * @type {State}
@@ -234,11 +234,8 @@ function tabbedTokenizeStart(effects, ok, nok) {
   /**
    * ```markdown
    * > | === "C++"
-   *            ^
+   *             ^^^^ (optional trailing spaces)
    * ```
-   *
-   * In effect:
-   * - `pymdownTabbedTitle`
    *
    * @type {State}
    */
@@ -256,13 +253,6 @@ function tabbedTokenizeStart(effects, ok, nok) {
       effects.consume(code);
       return tabTitleAfter;
     }
-
-    /**
-     * ```markdown
-     * > | === "C++"[EOL]
-     *              ^ // ok
-     * ```
-     */
 
     assert(self.containerState, "expected state");
     self.containerState.size = initialSize + constants.tabSize;
@@ -282,20 +272,19 @@ function tabbedTokenizeContinuation(effects, ok, nok) {
 
   return effects.check(blankLine, onBlank, notBlank);
 
-  /** @type {State} */
+  /**
+   * ```markdown
+   * > | === "C++"[EOL]
+   * > | [EOL]
+   *     ^^^^^
+   * > |     Content
+   * ```
+   *
+   * And check next line.
+   *
+   * @type {State}
+   */
   function onBlank(code) {
-    /**
-     * onBlank:
-     *
-     * ```markdown
-     * > | === "C++"[EOL]
-     * > | [EOL]
-     *     ^^^^^
-     * > |     Content
-     * ```
-     *
-     * And check next line.
-     */
     assert(self.containerState, "expected state");
     assert(typeof self.containerState.size === "number", "expected size");
 
@@ -326,7 +315,7 @@ function tabbedTokenizeContinuation(effects, ok, nok) {
      * ```markdown
      * > | === "C++"[EOL]
      * > |     ...Content in Tabbed[EOL]
-     *     ^ Is space
+     *     ^ is space
      * ```
      *
      * check indent.
@@ -351,7 +340,6 @@ function tabbedTokenizeContinuation(effects, ok, nok) {
       effects,
       // check next tab
       effects.attempt(tabbedConstruct, ok, nok),
-      // and also, indent size (get from <linePrefix>)
       types.linePrefix,
       self.parser.constructs.disable.null.includes("codeIndented")
         ? undefined
@@ -380,6 +368,14 @@ function tokenizeIndent(effects, ok, nok) {
   /** @type {State} */
   function afterPrefix(code) {
     assert(self.containerState, "expected state");
+
+    /**
+     * ```markdown
+     * > | === "C++"
+     * > |     content
+     *     ^^^^ (indent)
+     * ```
+     */
     const tail = self.events[self.events.length - 1];
     return tail &&
       tail[1].type === types.listItemIndent &&
@@ -396,6 +392,7 @@ function tokenizeIndent(effects, ok, nok) {
 function tabbedTokenizeExit(effect) {
   assert(this.containerState, "expected state");
   assert(typeof this.containerState.type === "string", "expected type");
+
   effect.exit("pymdownTabbed");
 }
 
@@ -403,7 +400,7 @@ function tabbedTokenizeExit(effect) {
  * @returns {Extension}
  */
 export function pymdownTabbed() {
-  /** @type {import("micromark-util-types").Construct} */
+  /** @type {Construct} */
   const tokenizer = tabbedConstruct;
 
   return {
